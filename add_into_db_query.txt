@@ -10,3 +10,7 @@ CREATE TABLE egreso (
     motivo VARCHAR(128),
     FOREIGN KEY (idTransaccion) REFERENCES transaccion(id)
 );
+
+-- Agregar el atributo "tipo" a la tabla Transacción, restringiendo los valores a 0 o 1
+ALTER TABLE transaccion
+ADD COLUMN tipo TINYINT(1) CHECK (tipo IN (0, 1));
