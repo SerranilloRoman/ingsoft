@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from customtkinter import CTkImage
 from tkinter import *
 from tkinter import ttk
 from conexion import ConexionDB
@@ -34,32 +35,42 @@ class TicketVentaApp(ctk.CTk):
 
         # Combobox de clientes (búsqueda)
         client_label = ctk.CTkLabel(form_frame, text="Cliente", font=("Arial", 18), text_color="#000000")
-        client_label.place(x=50, y=30)
+        client_label.place(x=30, y=30)
 
         self.client_combobox = SearchableCombobox(form_frame, width=50)
-        self.client_combobox.place(x=150, y=30)
+        self.client_combobox.place(x=150, y=45)
         self.populate_combobox("cliente", "nombre", self.client_combobox)
 
         # Combobox de servicios y productos (búsqueda)
         services_label = ctk.CTkLabel(form_frame, text="Servicios/Productos", font=("Arial", 18), text_color="#000000")
-        services_label.place(x=50, y=90)
+        services_label.place(x=30, y=90)
 
         self.services_combobox = SearchableCombobox(form_frame, width=50)
-        self.services_combobox.place(x=250, y=90)
+        self.services_combobox.place(x=250, y=120)
         self.populate_combobox("producto", "nombre", self.services_combobox, append=True)
         self.populate_combobox("procedimiento", "nombre", self.services_combobox, append=True)
 
         # Selección de cantidad
         quantity_label = ctk.CTkLabel(form_frame, text="Cantidad", font=("Arial", 18), text_color="#000000")
-        quantity_label.place(x=600, y=90)
+        quantity_label.place(x=470, y=90)
 
         self.quantity_var = IntVar(value=1)
         self.quantity_spinbox = ttk.Spinbox(form_frame, from_=1, to=100, width=5, textvariable=self.quantity_var)
-        self.quantity_spinbox.place(x=700, y=90)
+        self.quantity_spinbox.place(x=680, y=120)
 
         # Botón de confirmar servicios/productos
         confirm_button = ctk.CTkButton(form_frame, text="Agregar", command=self.add_service_to_list)
-        confirm_button.place(x=800, y=85)
+        confirm_button.place(x=600, y=90)
+
+        # Botón para remover la fila seleccionada
+        remove_button = ctk.CTkButton(
+            form_frame,
+            text="Remover",
+            #fg_color="#FF6347",  # Color del botón
+            command=self.remove_selected_row
+        )
+        remove_button.place(relx=0.672, y=190, anchor="center")  # Ajusta la posición según sea necesario
+
 
         # Listado de servicios/productos seleccionados
         list_frame = ctk.CTkFrame(form_frame, width=900, height=500, fg_color="#FFFFFF")
@@ -121,42 +132,19 @@ class TicketVentaApp(ctk.CTk):
 
         if selected_item:
             # Insertar una nueva fila en la tabla
-            item_id = self.table.insert("", "end", values=(selected_item, quantity, ""))
-
-            # Crear el botón "Eliminar" en la columna de acciones
-            self.after(100, self.create_button, item_id)  # Usamos self para programar la creación del botón
+            self.table.insert("", "end", values=(selected_item, quantity))
             
             # Restablecer los campos de entrada
             self.services_combobox.set("")
             self.quantity_var.set(1)
 
-    def create_button(self, item_id):
-        """Crea un botón de 'Eliminar' sobre la celda correspondiente en la columna 'Acciones'."""
-        # Obtener la posición de la celda
-        bbox = self.table.bbox(item_id, column=2)  # Columna de "Acciones"
-        if not bbox:
-            return  # Si no hay caja delimitadora, regresar
-
-        x, y, width, height = bbox
-
-        # Cargar la imagen del botón (asegurándose de usar CTkImage)
-        
-        img = Image.open(delete_tk = find_directory("cancel.png", height)).resize((width, height))  # Cambia el tamaño según sea necesario
-        img_tk = CTkImage(light_image=delete_tk, dark_image=img)
-
-        # Crear el botón de eliminar
-        button = ctk.CTkButton(
-            self, text="Eliminar", fg_color="#FF6347", image=img_tk,
-            command=lambda: self.delete_row(item_id),
-            width=width, height=height  # Pasar el tamaño al constructor
-        )
-
-        # Posicionar el botón
-        button.place(x=x + self.table.winfo_rootx(), y=y + self.table.winfo_rooty())
-
-    def delete_row(self, item_id):
-        """Elimina la fila correspondiente de la tabla."""
-        self.table.delete(item_id)
+    def remove_selected_row(self):
+        """Elimina la fila seleccionada de la tabla."""
+        selected_item = self.table.selection()
+        if selected_item:
+            self.table.delete(selected_item)
+        else:
+            print("No hay una fila seleccionada para eliminar.")
 
 
     def confirm_sale(self):
