@@ -1,0 +1,12 @@
+-- Agregar el atributo "notas" a la tabla Transacción
+ALTER TABLE transaccion
+ADD COLUMN notas VARCHAR(255);
+
+
+-- Crear la tabla egreso
+CREATE TABLE egreso (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    idTransaccion INT,
+    motivo VARCHAR(128),
+    FOREIGN KEY (idTransaccion) REFERENCES transaccion(id)
+);
