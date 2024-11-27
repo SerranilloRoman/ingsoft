@@ -4,7 +4,7 @@ from directorio_imagen import find_directory
 
 
 class MenuPosApp(ctk.CTk):
-    def __init__(self):
+    def __init__(self, conexion):
         super().__init__()
 
         # Configuración de la ventana principal

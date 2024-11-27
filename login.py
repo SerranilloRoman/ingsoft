@@ -1,8 +1,53 @@
 import customtkinter as ctk
 from PIL import Image, ImageTk, ImageFilter
+from conexion import ConexionDB
+from menu_pos import MenuPosApp
 
 ctk.set_appearance_mode("light")  # Opcional: apariencia oscura
 ctk.set_default_color_theme("dark-blue")  # Tema base
+
+class ErrorPopup(ctk.CTkToplevel):
+    def __init__(self, parent, mensaje):
+        super().__init__(parent)
+
+        self.geometry("400x200")
+        self.title("Error")
+        self.configure(fg_color="#D9534F")
+        self.resizable(False, False)
+        self.grab_set()
+
+        message_label = ctk.CTkLabel(
+            self,
+            text=mensaje,
+            font=("Arial", 18),
+            text_color="white",
+            anchor="center"
+        )
+        message_label.pack(pady=(40, 20), padx=20)
+
+        close_button = ctk.CTkButton(
+            self,
+            text="Cerrar",
+            width=100,
+            height=40,
+            corner_radius=10,
+            fg_color="#FFFFFF",
+            text_color="#000000",
+            command=self.destroy
+        )
+        close_button.pack(pady=(20, 0))
+
+        self.center_window(parent)
+
+    def center_window(self, parent):
+        parent_x = parent.winfo_x()
+        parent_y = parent.winfo_y()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+
+        x = parent_x + (parent_width // 2) - (400 // 2)
+        y = parent_y + (parent_height // 2) - (200 // 2)
+        self.geometry(f"+{x}+{y}")
 
 class LoginApp(ctk.CTk):
     def __init__(self):
@@ -36,15 +81,15 @@ class LoginApp(ctk.CTk):
         username_label = ctk.CTkLabel(login_frame, text="Usuario", font=("Arial", 18), text_color="#FFFFFF")
         username_label.pack(pady=(0, 10))  # Espaciado superior
 
-        username_entry = ctk.CTkEntry(login_frame, width=300, height=40, corner_radius=10, fg_color="#FFFFFF")
-        username_entry.pack(pady=(0, 20))  # Espaciado entre elementos
-
+        self.username_entry = ctk.CTkEntry(login_frame, width=300, height=40, corner_radius=10, fg_color="#FFFFFF")
+        self.username_entry.pack(pady=(0, 20))  # Espaciado entre elementos
+        
         # Campo de contraseña
         password_label = ctk.CTkLabel(login_frame, text="Contraseña", font=("Arial", 18), text_color="#FFFFFF")
         password_label.pack(pady=(0, 10))
 
-        password_entry = ctk.CTkEntry(login_frame, width=300, height=40, corner_radius=10, fg_color="#FFFFFF", show="*")
-        password_entry.pack(pady=(0, 30))
+        self.password_entry = ctk.CTkEntry(login_frame, width=300, height=40, corner_radius=10, fg_color="#FFFFFF", show="*")
+        self.password_entry.pack(pady=(0, 30))
 
         # Botón de ingreso
         login_button = ctk.CTkButton(login_frame, text="Ingresar", text_color= "#000000", width=200, height=40, corner_radius=10, fg_color="#FFFFFF", 
@@ -66,8 +111,41 @@ class LoginApp(ctk.CTk):
             print(f"Error: No se encontró la imagen en {image_path}")
 
     def login_action(self):
+        db = ConexionDB()
+        conexion = db.conectar()
+        user = self.username_entry.get()
+        password = self.password_entry.get()
+
+        if conexion is None:
+            print("No se pudo establecer la conexión con la base de datos.")
+            return 
+        try:
+            with conexion.cursor() as cursor:
+                # Consulta SQL para verificar usuario y contraseña
+                query = "SELECT * FROM Usuario WHERE contacto = %s AND contacto = %s"
+                cursor.execute(query, (user, password))
+                resultado = cursor.fetchone()
+
+                if resultado:
+                    print("Login exitoso. ¡Bienvenido!")
+                    self.open_menu(conexion)
+                else:
+                    ErrorPopup(self, "Usuario o contraseña incorrectos.")
+        except Exception as e:
+            print(f"Error durante la consulta: {e}")
+            return False
+        finally:
+            conexion.close()
+    
         print("Botón de ingreso presionado")
+
+    def open_menu(self, conexion):
+        self.destroy()  # Cierra la ventana actual
+        menu_app = MenuPosApp(conexion)  # Pasa la conexión al menú
+        menu_app.mainloop()
 
 if __name__ == "__main__":
     app = LoginApp()
     app.mainloop()
+
+
