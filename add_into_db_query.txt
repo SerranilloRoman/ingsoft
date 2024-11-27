@@ -13,4 +13,4 @@ CREATE TABLE egreso (
 
 -- Agregar el atributo "tipo" a la tabla Transacción, restringiendo los valores a 0 o 1
 ALTER TABLE transaccion
-ADD COLUMN tipo TINYINT(1) CHECK (tipo IN (0, 1));
+ADD COLUMN tipo TINYINT(1);
