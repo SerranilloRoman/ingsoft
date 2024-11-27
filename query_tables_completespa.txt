@@ -1,0 +1,104 @@
+
+-- Tabla Usuario
+CREATE TABLE Usuario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    contacto VARCHAR(100),
+    fechaContratacion DATE,
+    antiguedad INT,
+    area VARCHAR(100),
+    turno VARCHAR(50),
+    nivelAcceso INT,
+    tipo VARCHAR(50)
+);
+
+-- Tabla Cliente
+CREATE TABLE Cliente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    fechaNacimiento DATE,
+    edad INT,
+    contacto VARCHAR(100)
+);
+
+-- Tabla Transacción
+CREATE TABLE Transaccion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha DATE NOT NULL,
+    hora TIME,
+    montoTotal DECIMAL(10, 2),
+    descuento DECIMAL(10, 2),
+    impuestos DECIMAL(10, 2),
+    metodoPago VARCHAR(50),
+    idCliente INT,
+    idUsuario INT,
+    FOREIGN KEY (idCliente) REFERENCES Cliente(id),
+    FOREIGN KEY (idUsuario) REFERENCES Usuario(id)
+);
+
+-- Tabla Detalles de Transacción
+CREATE TABLE DetallesTransaccion (
+    idTransaccion INT,
+    nombreFiscal VARCHAR(100),
+    domicilioFiscal VARCHAR(255),
+    RFC VARCHAR(50),
+    montoAFacturar DECIMAL(10, 2),
+    contactoFiscal VARCHAR(100),
+    PRIMARY KEY (idTransaccion),
+    FOREIGN KEY (idTransaccion) REFERENCES Transaccion(id)
+);
+
+-- Tabla Producto
+CREATE TABLE Producto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    precioUnitario DECIMAL(10, 2),
+    categoria VARCHAR(50)
+);
+
+-- Relación Transacción-Producto
+CREATE TABLE TransaccionProducto (
+    idTransaccion INT,
+    idProducto INT,
+    PRIMARY KEY (idTransaccion, idProducto),
+    FOREIGN KEY (idTransaccion) REFERENCES Transaccion(id),
+    FOREIGN KEY (idProducto) REFERENCES Producto(id)
+);
+
+-- Tabla Procedimiento
+CREATE TABLE Procedimiento (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    personalRequerido VARCHAR(255),
+    costo DECIMAL(10, 2),
+    duracion TIME
+);
+
+-- Relación Transacción-Procedimiento
+CREATE TABLE TransaccionProcedimiento (
+    idTransaccion INT,
+    idProcedimiento INT,
+    PRIMARY KEY (idTransaccion, idProcedimiento),
+    FOREIGN KEY (idTransaccion) REFERENCES Transaccion(id),
+    FOREIGN KEY (idProcedimiento) REFERENCES Procedimiento(id)
+);
+
+-- Tabla Personal
+CREATE TABLE Personal (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100),
+    fechaContratacion DATE,
+    tipo VARCHAR(50),
+    certificaciones TEXT,
+    licencia VARCHAR(100),
+    especialidad VARCHAR(100)
+);
+
+-- Relación Transacción-Personal
+CREATE TABLE TransaccionPersonal (
+    idTransaccion INT,
+    idPersonal INT,
+    PRIMARY KEY (idTransaccion, idPersonal),
+    FOREIGN KEY (idTransaccion) REFERENCES Transaccion(id),
+    FOREIGN KEY (idPersonal) REFERENCES Personal(id)
+);
