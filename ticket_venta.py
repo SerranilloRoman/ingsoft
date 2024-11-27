@@ -1,9 +1,10 @@
 import customtkinter as ctk
 from tkinter import *
 from tkinter import ttk
-from tkinter import Scrollbar, IntVar, StringVar
 from conexion import ConexionDB
 from PIL import Image, ImageTk
+from searchable_combobox import SearchableCombobox
+from directorio_imagen import find_directory
 
 
 class TicketVentaApp(ctk.CTk):
@@ -13,7 +14,9 @@ class TicketVentaApp(ctk.CTk):
         # Configuración de la ventana principal
         self.title("Ticket de Venta")
         self.geometry("1440x800")
-        self.configure(bg_color="#556483")
+        self.configure(fg_color="#556483")
+
+
 
         # Conexión a la base de datos
         conexion_db = ConexionDB()
@@ -25,31 +28,26 @@ class TicketVentaApp(ctk.CTk):
             print("Error al conectar a la base de datos")
             self.cursor = None
 
-        # Frame de fondo
-        background_frame = ctk.CTkFrame(self, width=1440, height=1024, corner_radius=0)
-        background_frame.place(relx=0.5, rely=0.5, anchor="center")
-        background_frame.configure(fg_color="#556483")
-
         # Frame formulario
         form_frame = ctk.CTkFrame(self, width=1000, height=700, corner_radius=20, fg_color="#D6CDC6")
         form_frame.place(relx=0.5, rely=0.1, anchor="n")
 
-        # Combobox de clientes
+        # Combobox de clientes (búsqueda)
         client_label = ctk.CTkLabel(form_frame, text="Cliente", font=("Arial", 18), text_color="#000000")
         client_label.place(x=50, y=30)
 
-        self.client_combobox = ttk.Combobox(form_frame, width=50)
-        self.populate_combobox("cliente", "nombre", self.client_combobox)
+        self.client_combobox = SearchableCombobox(form_frame, width=50)
         self.client_combobox.place(x=150, y=30)
+        self.populate_combobox("cliente", "nombre", self.client_combobox)
 
-        # Combobox de servicios y productos
+        # Combobox de servicios y productos (búsqueda)
         services_label = ctk.CTkLabel(form_frame, text="Servicios/Productos", font=("Arial", 18), text_color="#000000")
         services_label.place(x=50, y=90)
 
-        self.services_combobox = ttk.Combobox(form_frame, width=50)
-        self.populate_combobox("producto", "nombre", self.services_combobox)
-        self.populate_combobox("procedimiento", "nombre", self.services_combobox, append=True)
+        self.services_combobox = SearchableCombobox(form_frame, width=50)
         self.services_combobox.place(x=250, y=90)
+        self.populate_combobox("producto", "nombre", self.services_combobox, append=True)
+        self.populate_combobox("procedimiento", "nombre", self.services_combobox, append=True)
 
         # Selección de cantidad
         quantity_label = ctk.CTkLabel(form_frame, text="Cantidad", font=("Arial", 18), text_color="#000000")
@@ -60,16 +58,7 @@ class TicketVentaApp(ctk.CTk):
         self.quantity_spinbox.place(x=700, y=90)
 
         # Botón de confirmar servicios/productos
-        try:
-            confirm_img = Image.open("yes.png").resize((30, 30))
-            confirm_tk = ImageTk.PhotoImage(confirm_img)
-        except FileNotFoundError:
-            print("Error: No se encontró la imagen yes.png")
-            confirm_tk = None
-
-        confirm_button = ctk.CTkButton(form_frame, text="", image=confirm_tk, width=50, height=50, fg_color="#D6CDC6",
-                                       command=self.add_service_to_list)
-        confirm_button.image = confirm_tk
+        confirm_button = ctk.CTkButton(form_frame, text="Agregar", command=self.add_service_to_list)
         confirm_button.place(x=800, y=85)
 
         # Listado de servicios/productos seleccionados
@@ -91,7 +80,8 @@ class TicketVentaApp(ctk.CTk):
         self.table.configure(yscrollcommand=scrollbar.set)
         self.table.pack(side="left", expand=True, fill="both")
 
-        # Botón de confirmar venta fuera del list_frame
+        confirm_tk = find_directory("yes.png", 30)
+
         confirm_sale_button = ctk.CTkButton(
             form_frame,
             text="", 
@@ -114,12 +104,13 @@ class TicketVentaApp(ctk.CTk):
         try:
             self.cursor.execute(query)
             rows = self.cursor.fetchall()
+            new_values = [row[0] for row in rows]
 
-            if not append:
-                combobox['values'] = [row[0] for row in rows]
+            if append and hasattr(combobox, '_completion_list'):
+                current_values = combobox._completion_list
+                combobox.set_completion_list(current_values + new_values)
             else:
-                existing_values = combobox['values']
-                combobox['values'] = list(existing_values) + [row[0] for row in rows]
+                combobox.set_completion_list(new_values)
         except Exception as e:
             print(f"Error al llenar el combobox: {e}")
 
@@ -127,10 +118,46 @@ class TicketVentaApp(ctk.CTk):
         """Agrega el servicio o producto seleccionado a la tabla."""
         selected_item = self.services_combobox.get()
         quantity = self.quantity_var.get()
+
         if selected_item:
-            self.table.insert("", "end", values=(selected_item, quantity, "Eliminar"))
+            # Insertar una nueva fila en la tabla
+            item_id = self.table.insert("", "end", values=(selected_item, quantity, ""))
+
+            # Crear el botón "Eliminar" en la columna de acciones
+            self.after(100, self.create_button, item_id)  # Usamos self para programar la creación del botón
+            
+            # Restablecer los campos de entrada
             self.services_combobox.set("")
             self.quantity_var.set(1)
+
+    def create_button(self, item_id):
+        """Crea un botón de 'Eliminar' sobre la celda correspondiente en la columna 'Acciones'."""
+        # Obtener la posición de la celda
+        bbox = self.table.bbox(item_id, column=2)  # Columna de "Acciones"
+        if not bbox:
+            return  # Si no hay caja delimitadora, regresar
+
+        x, y, width, height = bbox
+
+        # Cargar la imagen del botón (asegurándose de usar CTkImage)
+        
+        img = Image.open(delete_tk = find_directory("cancel.png", height)).resize((width, height))  # Cambia el tamaño según sea necesario
+        img_tk = CTkImage(light_image=delete_tk, dark_image=img)
+
+        # Crear el botón de eliminar
+        button = ctk.CTkButton(
+            self, text="Eliminar", fg_color="#FF6347", image=img_tk,
+            command=lambda: self.delete_row(item_id),
+            width=width, height=height  # Pasar el tamaño al constructor
+        )
+
+        # Posicionar el botón
+        button.place(x=x + self.table.winfo_rootx(), y=y + self.table.winfo_rooty())
+
+    def delete_row(self, item_id):
+        """Elimina la fila correspondiente de la tabla."""
+        self.table.delete(item_id)
+
 
     def confirm_sale(self):
         """Confirma la venta y procede al pago."""
@@ -143,4 +170,3 @@ class TicketVentaApp(ctk.CTk):
 if __name__ == "__main__":
     app = TicketVentaApp()
     app.mainloop()
-
