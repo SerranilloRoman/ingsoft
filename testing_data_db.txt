@@ -1,0 +1,69 @@
+-- Registros de prueba para Usuario
+INSERT INTO Usuario (nombre, contacto, fechaContratacion, antiguedad, area, turno, nivelAcceso, tipo)
+VALUES 
+('Juan Pérez', 'juan.perez@mail.com', '2020-05-10', 4, 'Ventas', 'Matutino', 1, 'Administrador'),
+('Ana Gómez', 'ana.gomez@mail.com', '2018-03-15', 6, 'Almacén', 'Vespertino', 2, 'Almacenista'),
+('Carlos Ruiz', 'carlos.ruiz@mail.com', '2022-01-20', 2, 'Cajas', 'Nocturno', 3, 'Cajero');
+
+-- Registros de prueba para Cliente
+INSERT INTO Cliente (nombre, fechaNacimiento, edad, contacto)
+VALUES 
+('María López', '1990-04-15', 34, 'maria.lopez@mail.com'),
+('Pedro García', '1985-10-05', 39, 'pedro.garcia@mail.com'),
+('Lucía Fernández', '2000-08-22', 24, 'lucia.fernandez@mail.com');
+
+-- Registros de prueba para Transacción
+INSERT INTO Transaccion (fecha, hora, montoTotal, descuento, impuestos, metodoPago, idCliente, idUsuario)
+VALUES 
+('2024-11-15', '10:30:00', 150.50, 10.00, 8.05, 'Tarjeta de Crédito', 1, 1),
+('2024-11-16', '14:45:00', 300.00, 15.00, 16.50, 'Efectivo', 2, 2),
+('2024-11-17', '18:20:00', 450.75, 20.00, 24.75, 'Tarjeta de Débito', 3, 3);
+
+-- Registros de prueba para Detalles de Transacción
+INSERT INTO DetallesTransaccion (idTransaccion, nombreFiscal, domicilioFiscal, RFC, montoAFacturar, contactoFiscal)
+VALUES 
+(1, 'Comercial López S.A.', 'Av. Siempre Viva 123', 'ABC123456789', 150.50, 'contacto@comerciallopez.com'),
+(2, 'Distribuidora García', 'Calle Falsa 456', 'DEF987654321', 300.00, 'contacto@distribuidoragarcia.com'),
+(3, 'Servicios Fernández', 'Calle Real 789', 'GHI123789456', 450.75, 'contacto@serviciosfernandez.com');
+
+-- Registros de prueba para Producto
+INSERT INTO Producto (nombre, precioUnitario, categoria)
+VALUES 
+('Producto A', 50.00, 'Electrónica'),
+('Producto B', 75.00, 'Hogar'),
+('Producto C', 100.00, 'Oficina');
+
+-- Registros de prueba para Relación Transacción-Producto
+INSERT INTO TransaccionProducto (idTransaccion, idProducto)
+VALUES 
+(1, 1),
+(1, 2),
+(2, 3);
+
+-- Registros de prueba para Procedimiento
+INSERT INTO Procedimiento (nombre, personalRequerido, costo, duracion)
+VALUES 
+('Instalación Básica', '1 técnico', 100.00, '00:30:00'),
+('Mantenimiento Preventivo', '2 técnicos', 200.00, '01:00:00'),
+('Reparación Completa', '3 técnicos', 500.00, '02:30:00');
+
+-- Registros de prueba para Relación Transacción-Procedimiento
+INSERT INTO TransaccionProcedimiento (idTransaccion, idProcedimiento)
+VALUES 
+(1, 1),
+(2, 2),
+(3, 3);
+
+-- Registros de prueba para Personal
+INSERT INTO Personal (nombre, fechaContratacion, tipo, certificaciones, licencia, especialidad)
+VALUES 
+('José Martínez', '2019-06-10', 'Técnico', 'Certificado en Electrónica', 'LIC12345', 'Electrónica'),
+('Laura Jiménez', '2020-08-20', 'Técnico', 'Certificado en Refrigeración', 'LIC67890', 'Refrigeración'),
+('Diego Torres', '2021-03-15', 'Técnico', 'Certificado en Computadoras', 'LIC54321', 'Computación');
+
+-- Registros de prueba para Relación Transacción-Personal
+INSERT INTO TransaccionPersonal (idTransaccion, idPersonal)
+VALUES 
+(1, 1),
+(2, 2),
+(3, 3);
