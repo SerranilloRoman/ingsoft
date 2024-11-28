@@ -7,6 +7,49 @@ from PIL import Image, ImageTk
 from searchable_combobox import SearchableCombobox
 from directorio_imagen import find_directory
 
+class ErrorPopup(ctk.CTkToplevel):
+    def __init__(self, parent, mensaje):
+        super().__init__(parent)
+
+        self.geometry("400x200")
+        self.title("Error")
+        self.configure(fg_color="#D9534F")
+        self.resizable(False, False)
+        self.grab_set()
+
+        message_label = ctk.CTkLabel(
+            self,
+            text=mensaje,
+            font=("Arial", 18),
+            text_color="white",
+            anchor="center"
+        )
+        message_label.pack(pady=(40, 20), padx=20)
+
+        close_button = ctk.CTkButton(
+            self,
+            text="Cerrar",
+            width=100,
+            height=40,
+            corner_radius=10,
+            fg_color="#FFFFFF",
+            text_color="#000000",
+            command=self.destroy
+        )
+        close_button.pack(pady=(20, 0))
+
+        self.center_window(parent)
+
+    def center_window(self, parent):
+        parent_x = parent.winfo_x()
+        parent_y = parent.winfo_y()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+
+        x = parent_x + (parent_width // 2) - (400 // 2)
+        y = parent_y + (parent_height // 2) - (200 // 2)
+        self.geometry(f"+{x}+{y}")
+
 class FrameController(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -177,12 +220,15 @@ class TicketVentaApp(ctk.CTkFrame):
     def confirm_sale(self):
         """Confirma la venta y procede al pago."""
         print("Confirmar venta presionado")
-        for item in self.table.get_children():
-
-            service, quantity = self.table.item(item)["values"]
-            print(f"Servicio/Producto: {service}, Cantidad: {quantity}")
+        if not self.table.get_children():
+            ErrorPopup(self, "No hay servicios/productos")
+        else:
         
-        self.go_to_PagoFrame()
+            for item in self.table.get_children():
+                service, quantity = self.table.item(item)["values"]
+                print(f"Servicio/Producto: {service}, Cantidad: {quantity}")
+
+            self.go_to_PagoFrame()
     
     def go_to_PagoFrame(self):
         self.controller.show_frame("PagoFrame")
@@ -222,41 +268,41 @@ class PagoFrame(ctk.CTkFrame):
         ]
 
         for idx, text in enumerate(labels_text):
-            ctk.CTkLabel(form_frame, text=text, font=("Arial", 16), text_color="#000000").place(x=150, y=30 + idx * 60)
+            ctk.CTkLabel(form_frame, text=text, font=("Arial", 16), text_color="#000000").place(x=250, y=30 + idx * 60)
 
-        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.total_var, width=200).place(x=320, y=30)
-        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.descuentos_var, width=200).place(x=320, y=90)
-        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.motivo_var, width=200).place(x=320, y=150)
-        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.final_var, width=200).place(x=320, y=210)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.total_var, width=200).place(x=420, y=30)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.descuentos_var, width=200).place(x=420, y=90)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.motivo_var, width=200).place(x=420, y=150)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.final_var, width=200).place(x=420, y=210)
 
         # Dropdown para método de pago
         self.metodo_pago_menu = ctk.CTkOptionMenu(form_frame, variable=self.metodo_pago_var, 
                                                   values=["Efectivo", "Tarjeta", "Transferencia"], fg_color="#FFFFFF")
-        self.metodo_pago_menu.place(x=350, y=270)
+        self.metodo_pago_menu.place(x=420, y=270)
 
-        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.recibo_var, width=200).place(x=320, y=330)
-        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.cambio_var, width=200).place(x=320, y=390)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.recibo_var, width=200).place(x=420, y=330)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.cambio_var, width=200).place(x=420, y=390)
 
         # Botones
-        clipboard_icon = ctk.CTkButton(form_frame, text="", width=40, height=40, fg_color="#FFFFFF")
+        clipboard_icon = ctk.CTkButton(form_frame, text="", width=50, height=50, fg_color="#FFFFFF")
         clipboard_icon.place(x=620, y=500)
 
-        confirm_icon = ctk.CTkButton(form_frame, text="", width=40, height=40, fg_color="#FFFFFF", command=self.confirmar_pago)
+        confirm_icon = ctk.CTkButton(form_frame, text="", width=50, height=50, fg_color="#FFFFFF", command=self.confirmar_pago)
         confirm_icon.place(x=700, y=500)
 
-        confirm_tk = find_directory("yes.png", 30)
+        return_tk = find_directory("return.png", 30)
 
         return_sale_button = ctk.CTkButton(
             form_frame,
             text="", 
-            image=confirm_tk, 
+            image=return_tk, 
             width=50, 
             height=50, 
             fg_color="#FFFFFF", 
             command=self.go_to_TicketVentaApp
         )
-        return_sale_button.image = confirm_tk
-        return_sale_button.place(relx=0.5, rely=0.85, anchor="n")
+        return_sale_button.image = return_tk
+        return_sale_button.place(x=250, y=500)
 
     def go_to_TicketVentaApp(self):
         self.controller.show_frame("TicketVentaApp")
