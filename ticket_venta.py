@@ -7,8 +7,7 @@ from PIL import Image, ImageTk
 from searchable_combobox import SearchableCombobox
 from directorio_imagen import find_directory
 
-
-class TicketVentaApp(ctk.CTk):
+class FrameController(ctk.CTk):
     def __init__(self):
         super().__init__()
 
@@ -17,7 +16,35 @@ class TicketVentaApp(ctk.CTk):
         self.geometry("1440x800")
         self.configure(fg_color="#556483")
 
+        # Conexión a la base de datos
+        conexion_db = ConexionDB()
+        self.conexion = conexion_db.conectar()
 
+        if self.conexion:
+            self.cursor = self.conexion.cursor()
+        else:
+            print("Error al conectar a la base de datos")
+            self.cursor = None
+
+        # Crear frames para cada pantalla
+        self.frames = {}
+        for FrameClass in (TicketVentaApp, PagoFrame):
+            frame = FrameClass(parent=self, controller=self)
+            self.frames[FrameClass.__name__] = frame
+            frame.place(relwidth=1, relheight=1)
+
+        # Mostrar el frame inicial
+        self.show_frame("TicketVentaApp")
+
+    def show_frame(self, frame_name):
+        """Muestra el frame especificado y oculta los demás."""
+        frame = self.frames[frame_name]
+        frame.tkraise()
+
+class TicketVentaApp(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent, fg_color="#556483")
+        self.controller = controller
 
         # Conexión a la base de datos
         conexion_db = ConexionDB()
@@ -84,7 +111,7 @@ class TicketVentaApp(ctk.CTk):
         self.table.column("Servicio/Producto", width=400)
         self.table.column("Cantidad", width=150)
         self.table.column("Acciones", width=150)
-
+        
         # Barra de desplazamiento
         scrollbar = Scrollbar(list_frame, orient="vertical", command=self.table.yview)
         scrollbar.pack(side="right", fill="y")
@@ -145,16 +172,99 @@ class TicketVentaApp(ctk.CTk):
             self.table.delete(selected_item)
         else:
             print("No hay una fila seleccionada para eliminar.")
-
+    
 
     def confirm_sale(self):
         """Confirma la venta y procede al pago."""
         print("Confirmar venta presionado")
         for item in self.table.get_children():
-            service, quantity, _ = self.table.item(item)["values"]
+
+            service, quantity = self.table.item(item)["values"]
             print(f"Servicio/Producto: {service}, Cantidad: {quantity}")
+        
+        self.go_to_PagoFrame()
+    
+    def go_to_PagoFrame(self):
+        self.controller.show_frame("PagoFrame")
+
+class PagoFrame(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent, fg_color="#556483")
+
+        self.controller = controller
+
+        # Conexión a la base de datos
+        conexion_db = ConexionDB()
+        self.conexion = conexion_db.conectar()
+
+        if self.conexion:
+            self.cursor = self.conexion.cursor()
+        else:
+            print("Error al conectar a la base de datos")
+            self.cursor = None
+
+        # Frame formulario
+        form_frame = ctk.CTkFrame(self, width=1000, height=700, corner_radius=20, fg_color="#D6CDC6")
+        form_frame.place(relx=0.5, rely=0.1, anchor="n")
+
+        self.total_var = DoubleVar(value=0.0)
+        self.descuentos_var = DoubleVar(value=0.0)
+        self.motivo_var = StringVar()
+        self.final_var = DoubleVar(value=0.0)
+        self.metodo_pago_var = StringVar()
+        self.recibo_var = DoubleVar(value=0.0)
+        self.cambio_var = DoubleVar(value=0.0)
+        
+        # Labels y entradas
+        labels_text = [
+            "MONTO TOTAL", "DESCUENTOS", "MOTIVO DESCUENTO",
+            "MONTO FINAL", "METODO DE PAGO", "RECIBO", "CAMBIO"
+        ]
+
+        for idx, text in enumerate(labels_text):
+            ctk.CTkLabel(form_frame, text=text, font=("Arial", 16), text_color="#000000").place(x=150, y=30 + idx * 60)
+
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.total_var, width=200).place(x=320, y=30)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.descuentos_var, width=200).place(x=320, y=90)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.motivo_var, width=200).place(x=320, y=150)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.final_var, width=200).place(x=320, y=210)
+
+        # Dropdown para método de pago
+        self.metodo_pago_menu = ctk.CTkOptionMenu(form_frame, variable=self.metodo_pago_var, 
+                                                  values=["Efectivo", "Tarjeta", "Transferencia"], fg_color="#FFFFFF")
+        self.metodo_pago_menu.place(x=350, y=270)
+
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.recibo_var, width=200).place(x=320, y=330)
+        ctk.CTkEntry(form_frame, fg_color="#FFFFFF", text_color="#000000", textvariable=self.cambio_var, width=200).place(x=320, y=390)
+
+        # Botones
+        clipboard_icon = ctk.CTkButton(form_frame, text="", width=40, height=40, fg_color="#FFFFFF")
+        clipboard_icon.place(x=620, y=500)
+
+        confirm_icon = ctk.CTkButton(form_frame, text="", width=40, height=40, fg_color="#FFFFFF", command=self.confirmar_pago)
+        confirm_icon.place(x=700, y=500)
+
+        confirm_tk = find_directory("yes.png", 30)
+
+        return_sale_button = ctk.CTkButton(
+            form_frame,
+            text="", 
+            image=confirm_tk, 
+            width=50, 
+            height=50, 
+            fg_color="#FFFFFF", 
+            command=self.go_to_TicketVentaApp
+        )
+        return_sale_button.image = confirm_tk
+        return_sale_button.place(relx=0.5, rely=0.85, anchor="n")
+
+    def go_to_TicketVentaApp(self):
+        self.controller.show_frame("TicketVentaApp")
+
+    def confirmar_pago(self):
+            print("Pago confirmado")
 
 
 if __name__ == "__main__":
-    app = TicketVentaApp()
+    app = FrameController()
     app.mainloop()
